@@ -294,3 +294,188 @@ export const MAP = {
   WALL_MAX_SIZE: 120,    // 障害物の最大サイズ
   SAFE_ZONE_RADIUS: 300  // プレイヤー初期位置周辺の安全地帯
 };
+
+// スキルポイント設定
+export const SKILL_POINT = {
+  SP_PER_LEVEL: 1,        // レベルアップごとに獲得するSP
+  EXP_FOR_BONUS_SP: 500   // ボーナスSP獲得に必要な累計経験値
+};
+
+// スキルタイプ
+export enum SkillType {
+  // 攻撃系
+  POWER_SHOT = 'power_shot',           // ダメージ増加
+  RAPID_FIRE = 'rapid_fire',           // 連射速度上昇
+  PIERCING_ROUNDS = 'piercing_rounds', // 貫通弾強化
+  EXPLOSIVE_ROUNDS = 'explosive_rounds', // 爆発範囲拡大
+  MULTI_SHOT = 'multi_shot',           // 追加弾数
+
+  // 防御系
+  VITALITY = 'vitality',               // 最大HP増加
+  REGENERATION = 'regeneration',       // HP自動回復
+  ARMOR_PLATING = 'armor_plating',     // ダメージ軽減
+  EVASION = 'evasion',                 // 回避率
+
+  // ユーティリティ系
+  SPEED_BOOST = 'speed_boost',         // 移動速度上昇
+  MAGNETISM = 'magnetism',             // アイテム回収範囲
+  LUCKY = 'lucky',                     // ドロップ率上昇
+  EXP_BOOST = 'exp_boost'              // 経験値増加
+}
+
+// スキルカテゴリ
+export enum SkillCategory {
+  OFFENSE = 'offense',
+  DEFENSE = 'defense',
+  UTILITY = 'utility'
+}
+
+// スキル設定
+export const SKILLS: {
+  [key in SkillType]: {
+    name: string;
+    description: string;
+    category: SkillCategory;
+    maxLevel: number;
+    baseCost: number;        // 基本SPコスト
+    costPerLevel: number;    // レベルごとの追加コスト
+    effectPerLevel: number;  // レベルごとの効果量
+    color: number;
+  }
+} = {
+  // 攻撃系スキル
+  [SkillType.POWER_SHOT]: {
+    name: 'Power Shot',
+    description: 'Increases weapon damage by 10% per level',
+    category: SkillCategory.OFFENSE,
+    maxLevel: 5,
+    baseCost: 1,
+    costPerLevel: 1,
+    effectPerLevel: 0.10,  // +10% per level
+    color: 0xff4444
+  },
+  [SkillType.RAPID_FIRE]: {
+    name: 'Rapid Fire',
+    description: 'Increases fire rate by 8% per level',
+    category: SkillCategory.OFFENSE,
+    maxLevel: 5,
+    baseCost: 1,
+    costPerLevel: 1,
+    effectPerLevel: 0.08,  // +8% per level
+    color: 0xff8800
+  },
+  [SkillType.PIERCING_ROUNDS]: {
+    name: 'Piercing Rounds',
+    description: 'Adds +1 penetration hit per level',
+    category: SkillCategory.OFFENSE,
+    maxLevel: 3,
+    baseCost: 2,
+    costPerLevel: 2,
+    effectPerLevel: 1,     // +1 hit per level
+    color: 0xaa00ff
+  },
+  [SkillType.EXPLOSIVE_ROUNDS]: {
+    name: 'Explosive Rounds',
+    description: 'Increases explosion radius by 15% per level',
+    category: SkillCategory.OFFENSE,
+    maxLevel: 3,
+    baseCost: 2,
+    costPerLevel: 2,
+    effectPerLevel: 0.15,  // +15% per level
+    color: 0xff4400
+  },
+  [SkillType.MULTI_SHOT]: {
+    name: 'Multi Shot',
+    description: 'Adds +1 bullet per level',
+    category: SkillCategory.OFFENSE,
+    maxLevel: 3,
+    baseCost: 3,
+    costPerLevel: 3,
+    effectPerLevel: 1,     // +1 bullet per level
+    color: 0xff00aa
+  },
+
+  // 防御系スキル
+  [SkillType.VITALITY]: {
+    name: 'Vitality',
+    description: 'Increases max HP by 20 per level',
+    category: SkillCategory.DEFENSE,
+    maxLevel: 5,
+    baseCost: 1,
+    costPerLevel: 1,
+    effectPerLevel: 20,    // +20 HP per level
+    color: 0x00ff00
+  },
+  [SkillType.REGENERATION]: {
+    name: 'Regeneration',
+    description: 'Recovers 1 HP per second per level',
+    category: SkillCategory.DEFENSE,
+    maxLevel: 3,
+    baseCost: 2,
+    costPerLevel: 2,
+    effectPerLevel: 1,     // +1 HP/s per level
+    color: 0x00ff88
+  },
+  [SkillType.ARMOR_PLATING]: {
+    name: 'Armor Plating',
+    description: 'Reduces damage taken by 5% per level',
+    category: SkillCategory.DEFENSE,
+    maxLevel: 5,
+    baseCost: 1,
+    costPerLevel: 1,
+    effectPerLevel: 0.05,  // +5% reduction per level
+    color: 0x888888
+  },
+  [SkillType.EVASION]: {
+    name: 'Evasion',
+    description: '5% chance to dodge attacks per level',
+    category: SkillCategory.DEFENSE,
+    maxLevel: 3,
+    baseCost: 2,
+    costPerLevel: 2,
+    effectPerLevel: 0.05,  // +5% dodge per level
+    color: 0x00aaff
+  },
+
+  // ユーティリティ系スキル
+  [SkillType.SPEED_BOOST]: {
+    name: 'Speed Boost',
+    description: 'Increases movement speed by 15 per level',
+    category: SkillCategory.UTILITY,
+    maxLevel: 5,
+    baseCost: 1,
+    costPerLevel: 1,
+    effectPerLevel: 15,    // +15 speed per level
+    color: 0xffff00
+  },
+  [SkillType.MAGNETISM]: {
+    name: 'Magnetism',
+    description: 'Increases pickup range by 50px per level',
+    category: SkillCategory.UTILITY,
+    maxLevel: 3,
+    baseCost: 1,
+    costPerLevel: 1,
+    effectPerLevel: 50,    // +50px per level
+    color: 0x6666ff
+  },
+  [SkillType.LUCKY]: {
+    name: 'Lucky',
+    description: 'Increases item drop rate by 5% per level',
+    category: SkillCategory.UTILITY,
+    maxLevel: 3,
+    baseCost: 2,
+    costPerLevel: 2,
+    effectPerLevel: 0.05,  // +5% per level
+    color: 0xffaa00
+  },
+  [SkillType.EXP_BOOST]: {
+    name: 'EXP Boost',
+    description: 'Increases EXP gain by 10% per level',
+    category: SkillCategory.UTILITY,
+    maxLevel: 3,
+    baseCost: 2,
+    costPerLevel: 2,
+    effectPerLevel: 0.10,  // +10% per level
+    color: 0xaa00ff
+  }
+};

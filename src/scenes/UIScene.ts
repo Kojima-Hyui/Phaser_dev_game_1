@@ -13,6 +13,7 @@ export class UIScene extends Phaser.Scene {
   private weaponText!: Phaser.GameObjects.Text;
   private creditText!: Phaser.GameObjects.Text;
   private totalCreditText!: Phaser.GameObjects.Text;
+  private spText!: Phaser.GameObjects.Text;
   private bossHealthBarBg!: Phaser.GameObjects.Graphics;
   private bossHealthBar!: Phaser.GameObjects.Graphics;
   private bossNameText!: Phaser.GameObjects.Text;
@@ -84,8 +85,15 @@ export class UIScene extends Phaser.Scene {
       color: '#ffaa00'
     });
 
+    // SPテキスト
+    this.spText = this.add.text(20, 245, 'SP: 0', {
+      fontSize: '18px',
+      color: '#ffaa00',
+      fontStyle: 'bold'
+    });
+
     // 操作説明
-    this.add.text(20, 250, 'WASD: Move | Mouse: Aim | Space/Click: Shoot | 1-7: Weapon', {
+    this.add.text(20, 275, 'WASD: Move | Mouse: Aim | Space/Click: Shoot | 1-7: Weapon | TAB: Skills', {
       fontSize: '14px',
       color: '#666666'
     });
@@ -135,6 +143,7 @@ export class UIScene extends Phaser.Scene {
     expToNextLevel: number;
     currentWeapon: string;
     credits: number;
+    skillPoints: number;
     totalCredits: number;
   }): void {
     // HP バーの更新
@@ -167,6 +176,9 @@ export class UIScene extends Phaser.Scene {
     // クレジットテキストの更新
     this.creditText.setText(`Credits: ${data.credits}`);
     this.totalCreditText.setText(`Total Credits: ${data.totalCredits}`);
+
+    // SPテキストの更新
+    this.spText.setText(`SP: ${data.skillPoints}`);
   }
 
   private onBossSpawned(): void {

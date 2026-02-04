@@ -25,6 +25,7 @@ export class GameScene extends Phaser.Scene {
   private lastBossSpawnScore: number = 0;
   private difficultyLevel: number = 1;
   private lastDifficultyScore: number = 0;
+  private isSkillMenuOpen: boolean = false;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -115,12 +116,32 @@ export class GameScene extends Phaser.Scene {
 
     // スコア表示（UISceneに送信）
     this.events.on('updateScore', this.updateScore, this);
+
+    // TABキーでスキルメニュー開閉
+    this.input.keyboard!.on('keydown-TAB', (event: KeyboardEvent) => {
+      event.preventDefault();
+      this.toggleSkillMenu();
+    });
+
+    // スキルメニューが閉じられた時のイベント
+    this.events.on('skillMenuClosed', () => {
+      this.isSkillMenuOpen = false;
+      this.physics.resume();
+    });
   }
 
-  update(): void {
+  update(_time: number, delta: number): void {
+    // スキルメニューが開いている場合は更新しない
+    if (this.isSkillMenuOpen) {
+      return;
+    }
+
     // プレイヤーの更新
     this.player.update(this.cursors, this.wasd);
     this.player.aimAndRotate(this.input.activePointer);
+
+    // HP自動回復（Regenerationスキル）
+    this.player.updateRegen(delta);
 
     // 敵の数を維持
     if (this.enemies.getLength() < GAME.INITIAL_ENEMY_COUNT && !this.currentBoss) {
@@ -161,14 +182,16 @@ export class GameScene extends Phaser.Scene {
       expToNextLevel: this.player.expToNextLevel,
       currentWeapon: this.player.getCurrentWeapon().config.name,
       credits: this.currentCredits,
+      skillPoints: this.player.skillPoints,
       totalCredits: this.totalCredits
     });
   }
 
   private applyMagnetEffect(): void {
-    if (this.player.magnetRange <= 0) return;
+    const effectiveMagnetRange = this.player.getEffectiveMagnetRange();
+    if (effectiveMagnetRange <= 0) return;
 
-    const magnetRange = 50 + this.player.magnetRange; // ベース50px + マグネットボーナス
+    const magnetRange = 50 + effectiveMagnetRange; // ベース50px + マグネットボーナス
 
     // アイテムを引き寄せる
     this.items.getChildren().forEach((itemObj) => {
@@ -424,12 +447,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   private tryDropItem(x: number, y: number): void {
-    // ランダムでアイテムをドロップ
+    // ランダムでアイテムをドロップ（ドロップ率ボーナス適用）
     const allItems = Object.values(ItemType);
+    const dropBonus = this.player.getDropBonus();
 
     for (const itemType of allItems) {
       const config = ITEMS[itemType];
-      if (Math.random() < config.dropChance) {
+      const adjustedDropChance = config.dropChance * (1 + dropBonus);
+      if (Math.random() < adjustedDropChance) {
         const item = new Item(this, x, y, itemType);
         this.items.add(item);
         break; // 1回に1つのアイテムのみドロップ
@@ -780,5 +805,19 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard!.once('keydown-R', () => {
       this.scene.restart();
     });
+  }
+
+  private toggleSkillMenu(): void {
+    if (this.isSkillMenuOpen) {
+      // メニューを閉じる
+      this.scene.stop('SkillMenuScene');
+      this.isSkillMenuOpen = false;
+      this.physics.resume();
+    } else {
+      // メニューを開く
+      this.isSkillMenuOpen = true;
+      this.physics.pause();
+      this.scene.launch('SkillMenuScene', { player: this.player });
+    }
   }
 }

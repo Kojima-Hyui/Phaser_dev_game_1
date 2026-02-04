@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { PLAYER, COLORS, WeaponType, ItemType, ITEMS } from '@/utils/Constants';
+import { PLAYER, COLORS, WeaponType, ItemType, ITEMS, SkillType, SKILLS, SKILL_POINT } from '@/utils/Constants';
 import { Weapon } from './Weapon';
 
 export class Player extends Phaser.GameObjects.Graphics {
@@ -22,6 +22,27 @@ export class Player extends Phaser.GameObjects.Graphics {
   private armor: number;
   private extraBulletCount: number;
   public magnetRange: number;
+
+  // スキルポイントシステム
+  public skillPoints: number;
+  public totalExp: number;
+  private lastBonusSPExp: number;
+  private skillLevels: Map<SkillType, number>;
+
+  // スキル効果用
+  private skillDamageBonus: number;
+  private skillFireRateBonus: number;
+  private skillArmorBonus: number;
+  private skillSpeedBonus: number;
+  private skillExtraBullets: number;
+  private skillMagnetBonus: number;
+  private skillExpBonus: number;
+  private skillDropBonus: number;
+  private skillRegenRate: number;
+  private skillEvasion: number;
+  private skillPenetrationBonus: number;
+  private skillExplosionBonus: number;
+  private regenTimer: number;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene);
@@ -64,6 +85,27 @@ export class Player extends Phaser.GameObjects.Graphics {
     this.armor = 0;
     this.extraBulletCount = 0;
     this.magnetRange = 0;
+
+    // スキルポイントシステムの初期化
+    this.skillPoints = 0;
+    this.totalExp = 0;
+    this.lastBonusSPExp = 0;
+    this.skillLevels = new Map();
+
+    // スキル効果の初期化
+    this.skillDamageBonus = 0;
+    this.skillFireRateBonus = 0;
+    this.skillArmorBonus = 0;
+    this.skillSpeedBonus = 0;
+    this.skillExtraBullets = 0;
+    this.skillMagnetBonus = 0;
+    this.skillExpBonus = 0;
+    this.skillDropBonus = 0;
+    this.skillRegenRate = 0;
+    this.skillEvasion = 0;
+    this.skillPenetrationBonus = 0;
+    this.skillExplosionBonus = 0;
+    this.regenTimer = 0;
   }
 
   private drawPlayer(): void {
@@ -114,8 +156,8 @@ export class Player extends Phaser.GameObjects.Graphics {
   }
 
   public shoot(pointer: Phaser.Input.Pointer): void {
-    // 現在の武器で射撃（extraBulletCountを渡す）
-    this.currentWeapon.fire(this.x, this.y, pointer.worldX, pointer.worldY, this.extraBulletCount);
+    // 現在の武器で射撃（アイテム + スキルの追加弾数を渡す）
+    this.currentWeapon.fire(this.x, this.y, pointer.worldX, pointer.worldY, this.getTotalExtraBullets());
   }
 
   public getBullets(): Phaser.GameObjects.Group {
@@ -150,25 +192,6 @@ export class Player extends Phaser.GameObjects.Graphics {
 
   public getUnlockedWeapons(): WeaponType[] {
     return this.unlockedWeapons;
-  }
-
-  public takeDamage(damage: number): void {
-    // アーマーによるダメージ軽減
-    const actualDamage = damage * (1 - this.armor);
-    this.health = Math.max(0, this.health - actualDamage);
-
-    // ダメージを受けた時の視覚的フィードバック
-    this.scene.tweens.add({
-      targets: this,
-      alpha: 0.5,
-      duration: 100,
-      yoyo: true,
-      repeat: 2
-    });
-
-    if (this.health <= 0) {
-      this.onDeath();
-    }
   }
 
   public pickupItem(itemType: ItemType): void {
@@ -237,7 +260,17 @@ export class Player extends Phaser.GameObjects.Graphics {
   }
 
   public gainExp(amount: number): void {
-    this.exp += amount;
+    // EXPボーナスを適用
+    const bonusAmount = Math.floor(amount * (1 + this.skillExpBonus));
+    this.exp += bonusAmount;
+    this.totalExp += bonusAmount;
+
+    // ボーナスSPチェック（累計経験値500ごと）
+    while (this.totalExp >= this.lastBonusSPExp + SKILL_POINT.EXP_FOR_BONUS_SP) {
+      this.skillPoints += 1;
+      this.lastBonusSPExp += SKILL_POINT.EXP_FOR_BONUS_SP;
+      this.showSPGainEffect();
+    }
 
     // レベルアップチェック
     while (this.exp >= this.expToNextLevel) {
@@ -260,10 +293,13 @@ export class Player extends Phaser.GameObjects.Graphics {
     this.damageMultiplier += PLAYER.LEVEL_UP_DAMAGE_MULTIPLIER;
     this.speed += PLAYER.LEVEL_UP_SPEED_GAIN;
 
+    // スキルポイント獲得
+    this.skillPoints += SKILL_POINT.SP_PER_LEVEL;
+
     // レベルアップエフェクト
     this.showLevelUpEffect();
 
-    console.log(`Level Up! Now Level ${this.level}`);
+    console.log(`Level Up! Now Level ${this.level}, SP: ${this.skillPoints}`);
   }
 
   private showLevelUpEffect(): void {
@@ -303,5 +339,255 @@ export class Player extends Phaser.GameObjects.Graphics {
 
   public getCurrentDamage(): number {
     return Math.floor(this.baseDamage * this.damageMultiplier);
+  }
+
+  // SP獲得エフェクト
+  private showSPGainEffect(): void {
+    const spText = this.scene.add.text(this.x, this.y - 70, '+1 SP', {
+      fontSize: '20px',
+      color: '#ffaa00',
+      fontStyle: 'bold'
+    });
+    spText.setOrigin(0.5);
+
+    this.scene.tweens.add({
+      targets: spText,
+      y: spText.y - 30,
+      alpha: 0,
+      duration: 1000,
+      onComplete: () => {
+        spText.destroy();
+      }
+    });
+  }
+
+  // スキルレベル取得
+  public getSkillLevel(skillType: SkillType): number {
+    return this.skillLevels.get(skillType) || 0;
+  }
+
+  // スキル習得/強化
+  public upgradeSkill(skillType: SkillType): boolean {
+    const config = SKILLS[skillType];
+    const currentLevel = this.getSkillLevel(skillType);
+
+    // 最大レベルチェック
+    if (currentLevel >= config.maxLevel) {
+      return false;
+    }
+
+    // コスト計算
+    const cost = config.baseCost + (currentLevel * config.costPerLevel);
+
+    // SP不足チェック
+    if (this.skillPoints < cost) {
+      return false;
+    }
+
+    // SP消費してレベルアップ
+    this.skillPoints -= cost;
+    this.skillLevels.set(skillType, currentLevel + 1);
+
+    // スキル効果を再計算
+    this.recalculateSkillEffects();
+
+    return true;
+  }
+
+  // スキルコスト計算
+  public getSkillCost(skillType: SkillType): number {
+    const config = SKILLS[skillType];
+    const currentLevel = this.getSkillLevel(skillType);
+    return config.baseCost + (currentLevel * config.costPerLevel);
+  }
+
+  // スキル効果再計算
+  private recalculateSkillEffects(): void {
+    // リセット
+    this.skillDamageBonus = 0;
+    this.skillFireRateBonus = 0;
+    this.skillArmorBonus = 0;
+    this.skillSpeedBonus = 0;
+    this.skillExtraBullets = 0;
+    this.skillMagnetBonus = 0;
+    this.skillExpBonus = 0;
+    this.skillDropBonus = 0;
+    this.skillRegenRate = 0;
+    this.skillEvasion = 0;
+    this.skillPenetrationBonus = 0;
+    this.skillExplosionBonus = 0;
+
+    // 各スキルの効果を計算
+    this.skillLevels.forEach((level, skillType) => {
+      const config = SKILLS[skillType];
+      const effect = config.effectPerLevel * level;
+
+      switch (skillType) {
+        case SkillType.POWER_SHOT:
+          this.skillDamageBonus = effect;
+          break;
+        case SkillType.RAPID_FIRE:
+          this.skillFireRateBonus = effect;
+          break;
+        case SkillType.PIERCING_ROUNDS:
+          this.skillPenetrationBonus = effect;
+          break;
+        case SkillType.EXPLOSIVE_ROUNDS:
+          this.skillExplosionBonus = effect;
+          break;
+        case SkillType.MULTI_SHOT:
+          this.skillExtraBullets = effect;
+          break;
+        case SkillType.VITALITY:
+          // 最大HP増加（即時適用）
+          const hpGain = effect - (config.effectPerLevel * (level - 1));
+          if (hpGain > 0) {
+            this.maxHealth += hpGain;
+            this.health += hpGain;
+          }
+          break;
+        case SkillType.REGENERATION:
+          this.skillRegenRate = effect;
+          break;
+        case SkillType.ARMOR_PLATING:
+          this.skillArmorBonus = effect;
+          break;
+        case SkillType.EVASION:
+          this.skillEvasion = effect;
+          break;
+        case SkillType.SPEED_BOOST:
+          this.skillSpeedBonus = effect;
+          break;
+        case SkillType.MAGNETISM:
+          this.skillMagnetBonus = effect;
+          break;
+        case SkillType.LUCKY:
+          this.skillDropBonus = effect;
+          break;
+        case SkillType.EXP_BOOST:
+          this.skillExpBonus = effect;
+          break;
+      }
+    });
+  }
+
+  // HP自動回復処理（毎フレーム呼び出し）
+  public updateRegen(delta: number): void {
+    if (this.skillRegenRate > 0 && this.health < this.maxHealth) {
+      this.regenTimer += delta;
+      if (this.regenTimer >= 1000) { // 1秒ごと
+        this.health = Math.min(this.health + this.skillRegenRate, this.maxHealth);
+        this.regenTimer = 0;
+      }
+    }
+  }
+
+  // ダメージ処理（回避判定含む）
+  public takeDamage(damage: number): boolean {
+    // 回避判定
+    if (this.skillEvasion > 0 && Math.random() < this.skillEvasion) {
+      // 回避成功エフェクト
+      this.showDodgeEffect();
+      return false;
+    }
+
+    // アーマーによるダメージ軽減（アイテム + スキル）
+    const totalArmor = Math.min(this.armor + this.skillArmorBonus, 0.75); // 最大75%軽減
+    const actualDamage = damage * (1 - totalArmor);
+    this.health = Math.max(0, this.health - actualDamage);
+
+    // ダメージを受けた時の視覚的フィードバック
+    this.scene.tweens.add({
+      targets: this,
+      alpha: 0.5,
+      duration: 100,
+      yoyo: true,
+      repeat: 2
+    });
+
+    if (this.health <= 0) {
+      this.onDeath();
+    }
+
+    return true;
+  }
+
+  private showDodgeEffect(): void {
+    const dodgeText = this.scene.add.text(this.x, this.y - 30, 'DODGE!', {
+      fontSize: '16px',
+      color: '#00aaff',
+      fontStyle: 'bold'
+    });
+    dodgeText.setOrigin(0.5);
+
+    this.scene.tweens.add({
+      targets: dodgeText,
+      y: dodgeText.y - 20,
+      alpha: 0,
+      duration: 500,
+      onComplete: () => {
+        dodgeText.destroy();
+      }
+    });
+  }
+
+  // ステータス取得メソッド（UI用）
+  public getStats(): {
+    health: number;
+    maxHealth: number;
+    speed: number;
+    damageMultiplier: number;
+    armor: number;
+    evasion: number;
+    magnetRange: number;
+    extraBullets: number;
+    expBonus: number;
+    dropBonus: number;
+    regenRate: number;
+    fireRateBonus: number;
+    penetrationBonus: number;
+    explosionBonus: number;
+  } {
+    return {
+      health: this.health,
+      maxHealth: this.maxHealth,
+      speed: this.speed + this.skillSpeedBonus,
+      damageMultiplier: this.damageMultiplier + this.skillDamageBonus,
+      armor: Math.min(this.armor + this.skillArmorBonus, 0.75),
+      evasion: this.skillEvasion,
+      magnetRange: this.magnetRange + this.skillMagnetBonus,
+      extraBullets: this.extraBulletCount + this.skillExtraBullets,
+      expBonus: this.skillExpBonus,
+      dropBonus: this.skillDropBonus,
+      regenRate: this.skillRegenRate,
+      fireRateBonus: this.skillFireRateBonus,
+      penetrationBonus: this.skillPenetrationBonus,
+      explosionBonus: this.skillExplosionBonus
+    };
+  }
+
+  // スキルレベル一覧取得
+  public getAllSkillLevels(): Map<SkillType, number> {
+    return this.skillLevels;
+  }
+
+  // ドロップ率ボーナス取得
+  public getDropBonus(): number {
+    return this.skillDropBonus;
+  }
+
+  // 追加弾数取得（アイテム + スキル）
+  public getTotalExtraBullets(): number {
+    return this.extraBulletCount + this.skillExtraBullets;
+  }
+
+  // 実効速度取得
+  public getEffectiveSpeed(): number {
+    return this.speed + this.skillSpeedBonus;
+  }
+
+  // 実効マグネット範囲取得
+  public getEffectiveMagnetRange(): number {
+    return this.magnetRange + this.skillMagnetBonus;
   }
 }
