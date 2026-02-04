@@ -20,6 +20,8 @@ export class Player extends Phaser.GameObjects.Graphics {
   private damageBonus: number;
   private fireRateBonus: number;
   private armor: number;
+  private extraBulletCount: number;
+  public magnetRange: number;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene);
@@ -60,6 +62,8 @@ export class Player extends Phaser.GameObjects.Graphics {
     this.damageBonus = 0;
     this.fireRateBonus = 0;
     this.armor = 0;
+    this.extraBulletCount = 0;
+    this.magnetRange = 0;
   }
 
   private drawPlayer(): void {
@@ -110,8 +114,8 @@ export class Player extends Phaser.GameObjects.Graphics {
   }
 
   public shoot(pointer: Phaser.Input.Pointer): void {
-    // 現在の武器で射撃
-    this.currentWeapon.fire(this.x, this.y, pointer.worldX, pointer.worldY);
+    // 現在の武器で射撃（extraBulletCountを渡す）
+    this.currentWeapon.fire(this.x, this.y, pointer.worldX, pointer.worldY, this.extraBulletCount);
   }
 
   public getBullets(): Phaser.GameObjects.Group {
@@ -200,6 +204,21 @@ export class Player extends Phaser.GameObjects.Graphics {
         this.armor += config.effect;
         // 最大50%まで
         this.armor = Math.min(this.armor, 0.5);
+        break;
+
+      case ItemType.HEALTH_REGEN:
+        // 即時HP回復
+        this.health = Math.min(this.health + config.effect, this.maxHealth);
+        break;
+
+      case ItemType.MULTI_SHOT:
+        // 弾数+1
+        this.extraBulletCount += config.effect;
+        break;
+
+      case ItemType.MAGNET:
+        // アイテム/クレジット回収範囲+100px
+        this.magnetRange += config.effect;
         break;
     }
   }

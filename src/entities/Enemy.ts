@@ -86,7 +86,31 @@ export class Enemy extends Phaser.GameObjects.Graphics {
         // 大きな八角形
         this.drawOctagon();
         break;
+
+      case EnemyType.BOSS:
+        // ボス：複雑な形状（二重の円と十字）
+        this.drawBoss();
+        break;
     }
+  }
+
+  private drawBoss(): void {
+    // 外側の円
+    this.fillCircle(0, 0, this.size);
+    this.strokeCircle(0, 0, this.size);
+
+    // 内側の円
+    this.lineStyle(3, 0xffff00, 1);
+    this.strokeCircle(0, 0, this.size * 0.6);
+
+    // 十字
+    this.lineStyle(4, 0xffff00, 1);
+    this.beginPath();
+    this.moveTo(-this.size * 0.8, 0);
+    this.lineTo(this.size * 0.8, 0);
+    this.moveTo(0, -this.size * 0.8);
+    this.lineTo(0, this.size * 0.8);
+    this.strokePath();
   }
 
   private drawHexagon(): void {

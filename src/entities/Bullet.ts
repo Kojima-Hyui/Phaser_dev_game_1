@@ -5,6 +5,7 @@ export class Bullet extends Phaser.GameObjects.Graphics {
   public body!: Phaser.Physics.Arcade.Body;
   public damage: number;
   public penetration: boolean;
+  public explosionRadius: number;
   private lifeTimer: Phaser.Time.TimerEvent;
   private bulletSize: number;
   private hitCount: number = 0;
@@ -19,7 +20,8 @@ export class Bullet extends Phaser.GameObjects.Graphics {
     damage?: number,
     size?: number,
     color?: number,
-    penetration?: boolean
+    penetration?: boolean,
+    explosionRadius?: number
   ) {
     super(scene);
 
@@ -28,6 +30,7 @@ export class Bullet extends Phaser.GameObjects.Graphics {
     this.damage = damage !== undefined ? damage : BULLET.DAMAGE;
     this.bulletSize = size !== undefined ? size : BULLET.SIZE;
     this.penetration = penetration !== undefined ? penetration : false;
+    this.explosionRadius = explosionRadius !== undefined ? explosionRadius : 0;
 
     // 貫通弾の場合、複数回ヒット可能
     if (this.penetration) {

@@ -45,7 +45,8 @@ export enum EnemyType {
   CHASER = 'chaser',     // 追跡型
   SHOOTER = 'shooter',   // 遠距離攻撃型
   SPEEDY = 'speedy',     // 高速型
-  TANK = 'tank'          // タンク型
+  TANK = 'tank',         // タンク型
+  BOSS = 'boss'          // ボス
 }
 
 export const ENEMY_TYPES = {
@@ -80,6 +81,14 @@ export const ENEMY_TYPES = {
     size: 24,
     color: 0xff00ff,      // パープル
     score: 30
+  },
+  [EnemyType.BOSS]: {
+    speed: 80,
+    health: 500,
+    damage: 25,
+    size: 48,
+    color: 0xff0000,      // レッド
+    score: 200
   }
 };
 
@@ -97,7 +106,9 @@ export enum WeaponType {
   SHOTGUN = 'shotgun',
   RIFLE = 'rifle',
   SNIPER = 'sniper',
-  LASER = 'laser'
+  LASER = 'laser',
+  BEAM = 'beam',
+  ROCKET_LAUNCHER = 'rocket_launcher'
 }
 
 // 武器設定
@@ -111,7 +122,8 @@ export const WEAPONS = {
     bulletCount: 1,     // 一度に撃つ弾の数
     spread: 0,          // 散弾の広がり角度（ラジアン）
     penetration: false, // 貫通
-    color: 0x00ff00
+    color: 0x00ff00,
+    explosionRadius: 0
   },
   [WeaponType.SHOTGUN]: {
     name: 'Shotgun',
@@ -122,7 +134,8 @@ export const WEAPONS = {
     bulletCount: 5,     // 5発同時発射
     spread: 0.3,        // 広い散弾
     penetration: false,
-    color: 0xff6600
+    color: 0xff6600,
+    explosionRadius: 0
   },
   [WeaponType.RIFLE]: {
     name: 'Rifle',
@@ -133,7 +146,8 @@ export const WEAPONS = {
     bulletCount: 1,
     spread: 0,
     penetration: false,
-    color: 0x00ffff
+    color: 0x00ffff,
+    explosionRadius: 0
   },
   [WeaponType.SNIPER]: {
     name: 'Sniper',
@@ -144,7 +158,8 @@ export const WEAPONS = {
     bulletCount: 1,
     spread: 0,
     penetration: true,  // 貫通弾
-    color: 0xff00ff
+    color: 0xff00ff,
+    explosionRadius: 0
   },
   [WeaponType.LASER]: {
     name: 'Laser',
@@ -155,7 +170,32 @@ export const WEAPONS = {
     bulletCount: 1,
     spread: 0,
     penetration: true,  // 貫通弾
-    color: 0xff0066
+    color: 0xff0066,
+    explosionRadius: 0
+  },
+  [WeaponType.BEAM]: {
+    name: 'Beam',
+    damage: 5,
+    fireRate: 50,       // 超高速連射
+    bulletSpeed: 900,
+    bulletSize: 2,
+    bulletCount: 1,
+    spread: 0,
+    penetration: true,  // 貫通レーザー
+    color: 0x00ffaa,    // シアングリーン
+    explosionRadius: 0
+  },
+  [WeaponType.ROCKET_LAUNCHER]: {
+    name: 'Rocket Launcher',
+    damage: 40,
+    fireRate: 1200,     // 低速
+    bulletSpeed: 350,
+    bulletSize: 8,
+    bulletCount: 1,
+    spread: 0,
+    penetration: false,
+    color: 0xff4400,    // オレンジレッド
+    explosionRadius: 60 // 爆発半径
   }
 };
 
@@ -165,7 +205,10 @@ export enum ItemType {
   DAMAGE_UP = 'damage_up',
   MAX_HP_UP = 'max_hp_up',
   FIRE_RATE_UP = 'fire_rate_up',
-  ARMOR = 'armor'
+  ARMOR = 'armor',
+  HEALTH_REGEN = 'health_regen',
+  MULTI_SHOT = 'multi_shot',
+  MAGNET = 'magnet'
 }
 
 // アイテム設定
@@ -203,6 +246,27 @@ export const ITEMS = {
     description: 'Reduces damage taken',
     effect: 0.1,        // ダメージ軽減 10%
     color: 0xaaaaaa,
+    dropChance: 0.08
+  },
+  [ItemType.HEALTH_REGEN]: {
+    name: 'Health Regen',
+    description: 'Instantly restores HP',
+    effect: 40,         // 即時HP40回復
+    color: 0x00ff88,    // 明るい緑
+    dropChance: 0.10
+  },
+  [ItemType.MULTI_SHOT]: {
+    name: 'Multi Shot',
+    description: 'Adds +1 bullet to all weapons',
+    effect: 1,          // 弾数+1
+    color: 0xff00aa,    // ピンク
+    dropChance: 0.06    // レア
+  },
+  [ItemType.MAGNET]: {
+    name: 'Magnet',
+    description: 'Increases pickup range',
+    effect: 100,        // 回収範囲+100px
+    color: 0x6666ff,    // ブルー
     dropChance: 0.08
   }
 };

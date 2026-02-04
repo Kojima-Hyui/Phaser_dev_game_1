@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COLORS } from '@/utils/Constants';
+import { COLORS, GAME_WIDTH } from '@/utils/Constants';
 
 export class UIScene extends Phaser.Scene {
   private healthBarBg!: Phaser.GameObjects.Graphics;
@@ -13,6 +13,11 @@ export class UIScene extends Phaser.Scene {
   private weaponText!: Phaser.GameObjects.Text;
   private creditText!: Phaser.GameObjects.Text;
   private totalCreditText!: Phaser.GameObjects.Text;
+  private bossHealthBarBg!: Phaser.GameObjects.Graphics;
+  private bossHealthBar!: Phaser.GameObjects.Graphics;
+  private bossNameText!: Phaser.GameObjects.Text;
+  private warningText!: Phaser.GameObjects.Text;
+  private bossActive: boolean = false;
 
   constructor() {
     super({ key: 'UIScene', active: false });
@@ -80,14 +85,45 @@ export class UIScene extends Phaser.Scene {
     });
 
     // 操作説明
-    this.add.text(20, 250, 'WASD: Move | Mouse: Aim | Space/Click: Shoot | 1-5: Weapon', {
+    this.add.text(20, 250, 'WASD: Move | Mouse: Aim | Space/Click: Shoot | 1-7: Weapon', {
       fontSize: '14px',
       color: '#666666'
     });
 
+    // ボスHPバー背景（画面上部中央）
+    this.bossHealthBarBg = this.add.graphics();
+    this.bossHealthBarBg.fillStyle(COLORS.HEALTH_BAR_BG, 1);
+    this.bossHealthBarBg.fillRect(GAME_WIDTH / 2 - 200, 50, 400, 25);
+    this.bossHealthBarBg.setVisible(false);
+
+    // ボスHPバー
+    this.bossHealthBar = this.add.graphics();
+    this.bossHealthBar.setVisible(false);
+
+    // ボス名テキスト
+    this.bossNameText = this.add.text(GAME_WIDTH / 2, 30, 'CYBER GUARDIAN', {
+      fontSize: '24px',
+      color: '#ff0000',
+      fontStyle: 'bold'
+    });
+    this.bossNameText.setOrigin(0.5);
+    this.bossNameText.setVisible(false);
+
+    // 警告テキスト
+    this.warningText = this.add.text(GAME_WIDTH / 2, 200, 'WARNING', {
+      fontSize: '64px',
+      color: '#ff0000',
+      fontStyle: 'bold'
+    });
+    this.warningText.setOrigin(0.5);
+    this.warningText.setVisible(false);
+
     // GameSceneからのイベントを受信
     const gameScene = this.scene.get('GameScene');
     gameScene.events.on('updateUI', this.updateUI, this);
+    gameScene.events.on('bossSpawned', this.onBossSpawned, this);
+    gameScene.events.on('bossDefeated', this.onBossDefeated, this);
+    gameScene.events.on('updateBossHealth', this.updateBossHealth, this);
   }
 
   private updateUI(data: {
@@ -131,5 +167,61 @@ export class UIScene extends Phaser.Scene {
     // クレジットテキストの更新
     this.creditText.setText(`Credits: ${data.credits}`);
     this.totalCreditText.setText(`Total Credits: ${data.totalCredits}`);
+  }
+
+  private onBossSpawned(): void {
+    this.bossActive = true;
+
+    // 警告演出
+    this.warningText.setVisible(true);
+    this.warningText.setAlpha(1);
+
+    // 点滅アニメーション
+    this.tweens.add({
+      targets: this.warningText,
+      alpha: 0,
+      duration: 200,
+      yoyo: true,
+      repeat: 5,
+      onComplete: () => {
+        this.warningText.setVisible(false);
+      }
+    });
+
+    // 画面シェイク
+    this.cameras.main.shake(500, 0.01);
+
+    // ボスHPバーを表示
+    this.time.delayedCall(1500, () => {
+      this.bossHealthBarBg.setVisible(true);
+      this.bossHealthBar.setVisible(true);
+      this.bossNameText.setVisible(true);
+    });
+  }
+
+  private onBossDefeated(): void {
+    this.bossActive = false;
+    this.bossHealthBarBg.setVisible(false);
+    this.bossHealthBar.setVisible(false);
+    this.bossNameText.setVisible(false);
+  }
+
+  private updateBossHealth(data: { health: number; maxHealth: number }): void {
+    if (!this.bossActive) return;
+
+    const healthPercent = data.health / data.maxHealth;
+
+    this.bossHealthBar.clear();
+    // HPに応じて色を変える
+    let barColor = 0xff0000;
+    if (healthPercent > 0.66) {
+      barColor = 0xff0000;
+    } else if (healthPercent > 0.33) {
+      barColor = 0xff8800;
+    } else {
+      barColor = 0xffff00;
+    }
+    this.bossHealthBar.fillStyle(barColor, 1);
+    this.bossHealthBar.fillRect(GAME_WIDTH / 2 - 200, 50, 400 * healthPercent, 25);
   }
 }

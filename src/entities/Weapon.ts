@@ -12,6 +12,7 @@ export interface WeaponConfig {
   spread: number;
   penetration: boolean;
   color: number;
+  explosionRadius: number;
 }
 
 export class Weapon {
@@ -37,7 +38,7 @@ export class Weapon {
     return currentTime - this.lastFireTime >= this.config.fireRate;
   }
 
-  public fire(x: number, y: number, targetX: number, targetY: number): void {
+  public fire(x: number, y: number, targetX: number, targetY: number, extraBulletCount: number = 0): void {
     const currentTime = this.scene.time.now;
 
     if (!this.canFire(currentTime)) {
@@ -49,13 +50,15 @@ export class Weapon {
     // 基本角度を計算
     const baseAngle = Phaser.Math.Angle.Between(x, y, targetX, targetY);
 
-    // 複数弾を発射
-    for (let i = 0; i < this.config.bulletCount; i++) {
+    // 複数弾を発射（extraBulletCount を加算）
+    const totalBullets = this.config.bulletCount + extraBulletCount;
+    for (let i = 0; i < totalBullets; i++) {
       let angle = baseAngle;
 
       // 散弾の場合、角度をずらす
-      if (this.config.bulletCount > 1) {
-        const spreadOffset = this.config.spread * (i - (this.config.bulletCount - 1) / 2);
+      if (totalBullets > 1) {
+        const spread = this.config.spread > 0 ? this.config.spread : 0.15; // デフォルトspread
+        const spreadOffset = spread * (i - (totalBullets - 1) / 2);
         angle += spreadOffset;
       }
 
@@ -72,7 +75,8 @@ export class Weapon {
         this.config.damage,
         this.config.bulletSize,
         this.config.color,
-        this.config.penetration
+        this.config.penetration,
+        this.config.explosionRadius
       );
 
       this.bullets.add(bullet);
