@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { PLAYER, COLORS, WeaponType, ItemType } from '@/utils/Constants';
+import { PLAYER, COLORS, WeaponType, ItemType, ITEMS } from '@/utils/Constants';
 import { Weapon } from './Weapon';
 
 export class Player extends Phaser.GameObjects.Graphics {
@@ -173,7 +173,6 @@ export class Player extends Phaser.GameObjects.Graphics {
   }
 
   private applyItemEffect(itemType: ItemType): void {
-    const ITEMS = require('@/utils/Constants').ITEMS;
     const config = ITEMS[itemType];
 
     switch (itemType) {
