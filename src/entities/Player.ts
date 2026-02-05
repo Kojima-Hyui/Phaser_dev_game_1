@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { PLAYER, COLORS, WeaponType, ItemType, ITEMS, SkillType, SKILLS, SKILL_POINT } from '@/utils/Constants';
 import { Weapon } from './Weapon';
+import { KeyboardControls } from '@/types/controls';
 
 export class Player extends Phaser.GameObjects.Graphics {
   public body!: Phaser.Physics.Arcade.Body;
@@ -123,7 +124,7 @@ export class Player extends Phaser.GameObjects.Graphics {
     this.strokePath();
   }
 
-  public update(cursors: Phaser.Types.Input.Keyboard.CursorKeys, wasd: any): void {
+  public update(cursors: Phaser.Types.Input.Keyboard.CursorKeys, wasd: KeyboardControls): void {
     // 移動処理
     let velocityX = 0;
     let velocityY = 0;
@@ -260,6 +261,12 @@ export class Player extends Phaser.GameObjects.Graphics {
   }
 
   public gainExp(amount: number): void {
+    // EXP値の妥当性チェック
+    if (!isFinite(amount) || amount < 0) {
+      console.warn('Invalid exp amount:', amount);
+      return;
+    }
+
     // EXPボーナスを適用
     const bonusAmount = Math.floor(amount * (1 + this.skillExpBonus));
     this.exp += bonusAmount;
@@ -484,6 +491,12 @@ export class Player extends Phaser.GameObjects.Graphics {
 
   // ダメージ処理（回避判定含む）
   public takeDamage(damage: number): boolean {
+    // ダメージ値の妥当性チェック
+    if (!isFinite(damage) || damage < 0) {
+      console.warn('Invalid damage value:', damage);
+      return false;
+    }
+
     // 回避判定
     if (this.skillEvasion > 0 && Math.random() < this.skillEvasion) {
       // 回避成功エフェクト

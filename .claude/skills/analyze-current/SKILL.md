@@ -2,7 +2,7 @@
 name: analyze-current
 description: 現行のプロジェクト/コードベースを様々な観点から分析し、日本語でまとめた資料をdocsに配置します
 version: 1.0.0
-userInvocable: true
+user-invocable: true
 ---
 
 このプロジェクトの現行分析を実施します。以下の手順で進めてください：

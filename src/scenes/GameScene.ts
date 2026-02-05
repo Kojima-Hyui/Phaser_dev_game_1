@@ -8,12 +8,14 @@ import { Item } from '@/entities/Item';
 import { Credit } from '@/entities/Credit';
 import { MapGenerator, MapPattern } from '@/managers/MapGenerator';
 import { GAME_WIDTH, GAME_HEIGHT, GAME, ENEMY, MAP, EnemyType, WeaponType, ItemType, ITEMS, ENEMY_TYPES } from '@/utils/Constants';
+import { KeyboardControls } from '@/types/controls';
+import { loadSecureNumber, saveSecureNumber } from '@/utils/SecurityUtils';
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
   private enemies!: Phaser.GameObjects.Group;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private wasd!: any;
+  private wasd!: KeyboardControls;
   private score: number = 0;
   private mapGenerator!: MapGenerator;
   private walls!: Phaser.GameObjects.Group;
@@ -77,12 +79,17 @@ export class GameScene extends Phaser.Scene {
     this.spawnEnemies(GAME.INITIAL_ENEMY_COUNT);
 
     // 入力設定
-    this.cursors = this.input.keyboard!.createCursorKeys();
+    if (!this.input.keyboard) {
+      console.error('Keyboard input is not available');
+      return;
+    }
+
+    this.cursors = this.input.keyboard.createCursorKeys();
     this.wasd = {
-      w: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.W),
-      a: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.A),
-      s: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.S),
-      d: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.D)
+      w: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
+      a: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
+      s: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+      d: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D)
     };
 
     // スペースキーまたはマウスクリックで射撃
@@ -133,6 +140,11 @@ export class GameScene extends Phaser.Scene {
   update(_time: number, delta: number): void {
     // スキルメニューが開いている場合は更新しない
     if (this.isSkillMenuOpen) {
+      return;
+    }
+
+    // 必要なオブジェクトの存在チェック
+    if (!this.player || !this.cursors || !this.wasd) {
       return;
     }
 
@@ -575,12 +587,17 @@ export class GameScene extends Phaser.Scene {
   }
 
   private loadTotalCredits(): void {
-    const saved = localStorage.getItem('totalCredits');
-    this.totalCredits = saved ? parseInt(saved) : 0;
+    // セキュアなストレージからクレジットを読み込み（チェックサム検証付き）
+    this.totalCredits = loadSecureNumber('totalCredits', 0);
+    console.log('Loaded total credits:', this.totalCredits);
   }
 
   private saveTotalCredits(): void {
-    localStorage.setItem('totalCredits', this.totalCredits.toString());
+    // セキュアなストレージにクレジットを保存（チェックサム付き）
+    const success = saveSecureNumber('totalCredits', this.totalCredits);
+    if (!success) {
+      console.error('Failed to save totalCredits securely');
+    }
   }
 
   private updateScore(newScore: number): void {
@@ -802,9 +819,17 @@ export class GameScene extends Phaser.Scene {
     scoreText.setScrollFactor(0); // カメラに固定
 
     // Rキーでリスタート
-    this.input.keyboard!.once('keydown-R', () => {
-      this.scene.restart();
-    });
+    if (this.input.keyboard) {
+      this.input.keyboard.once('keydown-R', () => {
+        try {
+          this.scene.restart();
+        } catch (error) {
+          console.error('Failed to restart scene:', error);
+        }
+      });
+    } else {
+      console.warn('Keyboard input not available, cannot restart game with R key');
+    }
   }
 
   private toggleSkillMenu(): void {
